@@ -1,7 +1,27 @@
-# Node (Frontend)
-Frontend/node_modules/
-Frontend/build/
+# Secrets and Env
+.env
 Backend/.env
 
+# Dependencies
+node_modules/
 Backend/node_modules/
 Frontend/node_modules/
+
+# Local Media and Uploads
+Backend/uploads/
+Frontend/uploads/
+
+# Build and Production
+dist/
+build/
+Frontend/build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# OS Files
+.DS_Store
+Thumbs.db

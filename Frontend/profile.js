@@ -1,5 +1,5 @@
 let profileUser = null;
-let currentTab = 'answers';
+let currentTab = 'stories';
 
 document.addEventListener('DOMContentLoaded', () => {
     initProfile();
@@ -7,17 +7,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function initProfile() {
     const urlParams = new URLSearchParams(window.location.search);
-    const userId = urlParams.get('id');
+    let userId = urlParams.get('id');
 
     if (!userId) {
-        alert("User ID missing in URL");
-        window.location.href = 'home.html';
-        return;
+        // Wait for currentUser from home.js if it's still loading
+        if (!window.currentUser) {
+            await fetchUserData(); // Available from home.js
+        }
+        
+        if (window.currentUser) {
+            userId = window.currentUser._id;
+        } else {
+            alert("Please login to view your library.");
+            window.location.href = 'login.html';
+            return;
+        }
     }
 
     await fetchProfileData(userId);
     await fetchActivityStats(userId);
-    loadTabContent('answers');
+    loadTabContent('stories');
 }
 
 async function fetchProfileData(userId) {
@@ -44,22 +53,17 @@ async function fetchActivityStats(userId) {
         const stats = await response.json();
         
         // Update Header Stats
-        const countAnswersEl = document.getElementById("countAnswers");
-        const countQuestionsEl = document.getElementById("countQuestions");
+        const countStoriesEl = document.getElementById("countStories");
         const countFollowersEl = document.getElementById("countFollowers");
         const countFollowingEl = document.getElementById("countFollowing");
 
-        if (countAnswersEl) countAnswersEl.innerText = formatStatNumber(stats.answers);
-        if (countQuestionsEl) countQuestionsEl.innerText = formatStatNumber(stats.questions);
+        if (countStoriesEl) countStoriesEl.innerText = formatStatNumber(stats.stories || 0);
         if (countFollowersEl) countFollowersEl.innerText = formatStatNumber(stats.followersCount);
         if (countFollowingEl) countFollowingEl.innerText = formatStatNumber(stats.followingCount);
         
         // Update Tab Counts
-        const tabCountAnswersEl = document.getElementById("tabCountAnswers");
-        const tabCountQuestionsEl = document.getElementById("tabCountQuestions");
-
-        if (tabCountAnswersEl) tabCountAnswersEl.innerText = formatStatNumber(stats.answers);
-        if (tabCountQuestionsEl) tabCountQuestionsEl.innerText = formatStatNumber(stats.questions);
+        const tabCountStoriesEl = document.getElementById("tabCountStories");
+        if (tabCountStoriesEl) tabCountStoriesEl.innerText = formatStatNumber(stats.stories || 0);
 
         // Display Real Impact Score (Reach)
         const reach = stats.totalReach || 0;
@@ -71,7 +75,7 @@ async function fetchActivityStats(userId) {
         const impactDescEl = document.getElementById("impactDescription");
         if (impactDescEl) {
             const userName = profileUser ? profileUser.name.split(' ')[0] : 'Your';
-            impactDescEl.innerText = `${userName}'s answers have reached ${formatStatNumber(reach)} people this year, helping bridge the gap between academia and public discourse.`;
+            impactDescEl.innerText = `${userName}'s stories have reached ${formatStatNumber(reach)} people, inspiring readers around the world.`;
         }
     } catch (error) {
         console.error("Stats fetch error:", error);
@@ -207,38 +211,41 @@ async function loadTabContent(tab) {
     feed.innerHTML = `<div class="loading-state"><i class="fas fa-circle-notch fa-spin"></i></div>`;
 
     try {
-        if (tab === 'answers') {
-            const response = await fetch(`/api/user/${profileUser._id}/answers`);
-            const userAnswers = await response.json();
-            renderUserAnswers(userAnswers, feed);
-        } else if (tab === 'questions') {
-            const response = await fetch(`/api/user/${profileUser._id}/questions`);
-            const userQuestions = await response.json();
-            renderUserQuestions(userQuestions, feed);
-        } else if (tab === 'posts') {
-            const [qRes, aRes] = await Promise.all([
-                fetch(`/api/user/${profileUser._id}/questions`),
-                fetch(`/api/user/${profileUser._id}/answers`)
-            ]);
-            const questions = await qRes.json();
-            const answers = await aRes.json();
-            
-            // Combine and sort by date
-            const combined = [
-                ...questions.map(q => ({ ...q, type: 'question' })),
-                ...answers.map(a => ({ ...a, type: 'answer' }))
-            ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-            if (combined.length === 0) {
-                feed.innerHTML = `<div class="loading-state"><p>No activity yet.</p></div>`;
+        if (tab === 'stories') {
+            const response = await fetch(`/api/stories?author=${profileUser._id}`);
+            const userStories = await response.json();
+            if (userStories.length === 0) {
+                feed.innerHTML = `<div class="loading-state"><p>No stories published yet.</p></div>`;
             } else {
                 feed.innerHTML = "";
-                combined.forEach(item => {
-                    if (item.type === 'question') {
-                        feed.appendChild(createQuestionCard(item));
-                    } else {
-                        renderSingleAnswer(item, feed);
-                    }
+                userStories.forEach(s => {
+                    // Create story card using logic similar to home.js
+                    const card = document.createElement("div");
+                    card.className = "question-card"; 
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <div class="user-info">
+                                <h4 style="margin-bottom:5px;">${s.title}</h4>
+                                <span>Genre: ${s.genre} • ${new Date(s.createdAt).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <p>${s.description || 'A fascinating story waiting to be read.'}</p>
+                        </div>
+                        <div class="card-stats">
+                            <div class="stat-left">
+                                <div class="stat-badge">
+                                     <i class="far fa-eye"></i> Views • ${s.views || 0}
+                                </div>
+                            </div>
+                            <div class="stat-right">
+                                <div class="stat-item" onclick="window.location.href='read-story.html?id=${s._id}'" style="color: var(--primary-color); font-weight: bold;">
+                                    <i class="fas fa-book-open"></i> Read Story
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    feed.appendChild(card);
                 });
             }
         } else if (tab === 'followers' || tab === 'following') {

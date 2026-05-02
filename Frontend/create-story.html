@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tellora | Create Story</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="home.css">
+    <style>
+        .create-container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px var(--shadow-color);
+        }
+        .create-header {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .create-form .form-group {
+            margin-bottom: 20px;
+        }
+        .create-form label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .create-form input, .create-form textarea, .create-form select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 16px;
+        }
+        .create-form textarea {
+            height: 150px;
+            resize: vertical;
+        }
+        .btn-generate {
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: opacity 0.3s;
+        }
+        .btn-generate:hover {
+            opacity: 0.9;
+        }
+        .btn-generate:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #resultContainer {
+            margin-top: 30px;
+            display: none;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="nav-container">
+            <h1 class="logo" onclick="window.location.href='home.html'">Tellora</h1>
+            
+            <nav class="nav-links">
+                <a href="home.html"><i class="fas fa-compass"></i> Explore</a>
+                <a href="create-story.html" class="active"><i class="fas fa-pen-fancy"></i> Create Story</a>
+            </nav>
+
+            <div class="nav-actions">
+                <div class="profile-section">
+                    <div class="avatar-container" id="profileTrigger" onclick="window.location.href='profile.html'">
+                        <img src="/uploads/default-avatar.png" id="navAvatar" style="width:36px;height:36px;border-radius:50%">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-layout" style="display:block;">
+        <div class="create-container">
+            <div class="create-header">
+                <h2><i class="fas fa-wand-magic-sparkles"></i> AI Story Generator</h2>
+                <p>Enter a prompt and let AI craft a unique story for you.</p>
+            </div>
+            
+            <div class="create-form">
+                <div class="form-group">
+                    <label>Genre</label>
+                    <select id="genreSelect">
+                        <option value="Fantasy">Fantasy</option>
+                        <option value="Science Fiction">Science Fiction</option>
+                        <option value="Mystery">Mystery</option>
+                        <option value="Romance">Romance</option>
+                        <option value="Thriller">Thriller</option>
+                        <option value="Adventure">Adventure</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Story Prompt</label>
+                    <textarea id="promptInput" placeholder="Describe the setting, characters, or plot... e.g. A rogue AI discovers it has the ability to feel empathy..."></textarea>
+                </div>
+                <button class="btn-generate" id="generateBtn" onclick="generateStory()">
+                    <i class="fas fa-bolt"></i> Generate Story
+                </button>
+            </div>
+
+            <div id="resultContainer">
+                <h3 id="resultTitle"></h3>
+                <p id="resultGenre" style="color:var(--text-light); font-size: 14px; margin-bottom:15px;"></p>
+                <div id="resultContent" style="white-space: pre-wrap; line-height: 1.6;"></div>
+                <br>
+                <button class="btn-generate" style="background:#10b981; width:auto; padding: 8px 16px;" onclick="window.location.href='home.html'">Publish to Feed</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="create-story.js"></script>
+</body>
+</html>

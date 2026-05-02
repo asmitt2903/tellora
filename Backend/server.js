@@ -4,8 +4,8 @@ import path from "path"
 import jwt from "jsonwebtoken"
 import cookieParser from "cookie-parser"
 import User from "./models/userModel.js"
-import Question from "./models/questionModel.js"
-import Answer from "./models/answerModel.js"
+import Story from "./models/storyModel.js"
+import StoryChapter from "./models/storyChapterModel.js"
 import Notification from "./models/notificationModel.js"
 import AIChat from "./models/aiChatModel.js"
 import Chat from "./models/chatModel.js"
@@ -16,17 +16,9 @@ import { HfInference } from "@huggingface/inference"
 import { fileURLToPath } from "url"
 import multer from "multer"
 import fs from "fs"
-import { v2 as cloudinary } from "cloudinary"
-import { CloudinaryStorage } from "multer-storage-cloudinary"
-
 import dotenv from "dotenv"
 dotenv.config()
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
 
 const hf = new HfInference(process.env.HF_API_KEY);
 const HF_MODEL = "Qwen/Qwen2.5-7B-Instruct";
@@ -55,29 +47,17 @@ if (!fs.existsSync(uploadsPath)) {
 }
 app.use("/uploads", express.static(uploadsPath))
 
-// --- Multer & Cloudinary Config ---
-let storage;
-if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
-    storage = new CloudinaryStorage({
-        cloudinary: cloudinary,
-        params: {
-            folder: "mindforum_media",
-            resource_type: "auto", // Important: Allows both images and videos
-        },
-    });
-    console.log("Using Cloudinary for media storage.");
-} else {
-    storage = multer.diskStorage({
-        destination: function (req, file, cb) {
-            cb(null, uploadsPath);
-        },
-        filename: function (req, file, cb) {
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-            cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-        }
-    });
-    console.log("Using local disk for media storage (Cloudinary credentials not set).");
-}
+// --- Multer Config ---
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadsPath);
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+console.log("Using local disk for media storage.");
 const upload = multer({ storage })
 
 
@@ -222,6 +202,30 @@ app.get("/api/user/me", auth, async (req, res) => {
     }
 });
 
+app.post("/api/user/upload-profile-pic", auth, upload.single("profilePic"), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "No file uploaded" });
+        }
+
+        const profilePicUrl = `/uploads/${req.file.filename}`;
+        
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            { profilePic: profilePicUrl },
+            { new: true }
+        );
+
+        res.json({ 
+            message: "Profile picture updated successfully", 
+            profilePic: profilePicUrl 
+        });
+    } catch (error) {
+        console.error("Profile upload error:", error);
+        res.status(500).json({ message: "Failed to upload profile picture" });
+    }
+});
+
 app.get("/api/ai/history", auth, async (req, res) => {
     try {
         const chats = await AIChat.find({ user: req.user.id }).sort({ updatedAt: -1 });
@@ -236,13 +240,13 @@ app.post("/api/ai/ask", auth, async (req, res) => {
         const { prompt, chatId } = req.body;
         
         // Fetch context from the forum
-        const recentQuestions = await Question.find()
-            .populate("user", "name")
+        const recentStories = await Story.find()
+            .populate("author", "name")
             .sort({ createdAt: -1 })
             .limit(10);
             
-        const context = recentQuestions.map(q => 
-            `Space: ${q.spaces}, Question: ${q.content}, Author: ${q.user.name}`
+        const context = recentStories.map(s => 
+            `Genre: ${s.genre}, Story Title: ${s.title}, Author: ${s.author.name}`
         ).join("\n");
 
         const systemPrompt = `You are MindForum AI, an elite Editorial Intelligence designed for the MindForum knowledge-sharing platform.
@@ -386,22 +390,22 @@ app.post("/api/user/follow/:id", auth, async (req, res) => {
     }
 });
 
-// User Stats (Questions & Answers count + Reach)
+// User Stats (Stories & Chapters count + Reach)
 app.get("/api/user/stats/:id", async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        const qCount = await Question.countDocuments({ user: req.params.id });
-        const aCount = await Answer.countDocuments({ user: req.params.id });
+        const sCount = await Story.countDocuments({ author: req.params.id });
+        const cCount = await StoryChapter.countDocuments({ story: { $in: await Story.find({author: req.params.id}).distinct('_id') } });
         
-        // Sum of all views for user's questions
-        const questions = await Question.find({ user: req.params.id });
-        const totalReach = questions.reduce((acc, q) => acc + (q.views || 0), 0);
+        // Sum of all views for user's stories
+        const stories = await Story.find({ author: req.params.id });
+        const totalReach = stories.reduce((acc, s) => acc + (s.views || 0), 0);
 
         res.json({ 
-            questions: qCount, 
-            answers: aCount, 
+            questions: sCount, // keeping keys same for frontend compatibility for now
+            answers: cCount, 
             totalReach,
             followersCount: user.followers.length,
             followingCount: user.following.length
@@ -458,223 +462,203 @@ app.patch("/api/notifications/browser-notified", auth, async (req, res) => {
     }
 });
 
-// Get User Questions
+// Get User Stories
 app.get("/api/user/:id/questions", async (req, res) => {
     try {
-        const questions = await Question.find({ user: req.params.id })
-            .populate("user", "name profilePic")
+        const stories = await Story.find({ author: req.params.id })
+            .populate("author", "name profilePic")
             .sort({ createdAt: -1 });
-        res.json(questions);
+        res.json(stories);
     } catch (error) {
-        res.status(500).json({ message: "Error fetching user questions" });
+        res.status(500).json({ message: "Error fetching user stories" });
     }
 });
 
-// Get User Answers
-app.get("/api/user/:id/answers", async (req, res) => {
-    try {
-        const answers = await Answer.find({ user: req.params.id })
-            .populate("user", "name profilePic")
-            .populate("question", "content")
-            .sort({ createdAt: -1 });
-        res.json(answers);
-    } catch (error) {
-        res.status(500).json({ message: "Error fetching user answers" });
-    }
-});
+// --- Story & Chapter API ---
 
-// --- Question API ---
-
-app.post("/api/questions", auth, upload.single("media"), async (req, res) => {
+app.post("/api/stories", auth, upload.single("coverImage"), async (req, res) => {
     try {
-        const { content, spaces } = req.body;
-        let mediaUrl = "";
-        let mediaType = "text";
+        const { title, description, genre, tags } = req.body;
+        let coverImageUrl = "";
 
         if (req.file) {
-            mediaUrl = req.file.path.startsWith("http") ? req.file.path : `/uploads/${req.file.filename}`;
-            const ext = path.extname(req.file.originalname).toLowerCase();
-            if ([".jpg", ".jpeg", ".png", ".gif", ".webp"].includes(ext)) {
-                mediaType = "image";
-            } else if ([".mp4", ".mov", ".avi", ".mkv"].includes(ext)) {
-                mediaType = "video";
-            }
+            coverImageUrl = req.file.path.startsWith("http") ? req.file.path : `/uploads/${req.file.filename}`;
         }
 
-        const newQuestion = new Question({
-            user: req.user.id,
-            content,
-            mediaUrl,
-            mediaType,
-            spaces: spaces || "General"
+        const newStory = new Story({
+            author: req.user.id,
+            title,
+            description,
+            genre: genre || "Other",
+            tags: tags ? tags.split(",").map(t => t.trim()) : [],
+            coverImage: coverImageUrl,
+            status: "published"
         });
 
-        await newQuestion.save();
-        res.status(201).json(newQuestion);
+        await newStory.save();
+        res.status(201).json(newStory);
     } catch (error) {
-        console.error("Question error:", error);
-        res.status(500).json({ message: "Failed to post question" });
+        console.error("Story creation error:", error);
+        res.status(500).json({ message: "Failed to create story" });
     }
 });
 
-app.get("/api/questions", auth, async (req, res) => {
+app.get("/api/stories", auth, async (req, res) => {
     try {
-        const spaceFilter = req.query.space ? { spaces: req.query.space } : {};
-        const questions = await Question.find(spaceFilter)
-            .populate("user", "name profilePic")
+        const filter = {};
+        if (req.query.genre) filter.genre = req.query.genre;
+        if (req.query.author) filter.author = req.query.author;
+        const stories = await Story.find(filter)
+            .populate("author", "name profilePic")
             .sort({ createdAt: -1 });
 
-        // Increment views for each question (informal tracking)
-        // We'll increment only if the current user is not the author
-        const questionIds = questions.map(q => q._id);
-        await Question.updateMany(
-            { _id: { $in: questionIds }, user: { $ne: req.user.id } },
-            { $inc: { views: 1 } }
-        );
 
-        res.json(questions);
+        res.json(stories);
     } catch (error) {
-        res.status(500).json({ message: "Error fetching questions" });
+        res.status(500).json({ message: "Error fetching stories" });
     }
 });
 
-app.delete("/api/questions/:id", auth, async (req, res) => {
+app.get("/api/stories/:id", auth, async (req, res) => {
     try {
-        const question = await Question.findById(req.params.id);
-        if (!question) return res.status(404).json({ message: "Question not found" });
+        const story = await Story.findById(req.params.id).populate("author", "name profilePic");
+        if (!story) return res.status(404).json({ message: "Story not found" });
+
+        // Increment views if viewer is not author
+        if (story.author._id.toString() !== req.user.id) {
+            story.views = (story.views || 0) + 1;
+            await story.save();
+        }
+
+        res.json(story);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching story" });
+    }
+});
+
+app.delete("/api/stories/:id", auth, async (req, res) => {
+    try {
+        const story = await Story.findById(req.params.id);
+        if (!story) return res.status(404).json({ message: "Story not found" });
 
         // Check ownership
-        if (question.user.toString() !== req.user.id) {
-            return res.status(403).json({ message: "You are not authorized to delete this question" });
+        if (story.author.toString() !== req.user.id) {
+            return res.status(403).json({ message: "Not authorized to delete this story" });
         }
 
-        // Delete associated answers
-        await Answer.deleteMany({ question: req.params.id });
-        
-        // Delete notifications related to this question
-        await Notification.deleteMany({ questionId: req.params.id });
+        // Delete associated chapters
+        await StoryChapter.deleteMany({ story: req.params.id });
 
-        await Question.findByIdAndDelete(req.params.id);
+        await Story.findByIdAndDelete(req.params.id);
 
-        res.json({ message: "Question deleted successfully" });
+        res.json({ message: "Story deleted successfully" });
     } catch (error) {
         console.error("Delete error:", error);
-        res.status(500).json({ message: "Failed to delete question" });
+        res.status(500).json({ message: "Failed to delete story" });
     }
 });
 
-app.post("/api/questions/:id/like", auth, async (req, res) => {
+app.post("/api/stories/:id/chapters", auth, async (req, res) => {
     try {
-        const question = await Question.findById(req.params.id);
-        if (!question) return res.status(404).json({ message: "Question not found" });
-        const userId = req.user.id;
+        const { title, content } = req.body;
+        const storyId = req.params.id;
 
-        if (question.upvotes.includes(userId)) {
-            question.upvotes = question.upvotes.filter(id => id.toString() !== userId);
-        } else {
-            question.upvotes.push(userId);
-            question.downvotes = question.downvotes.filter(id => id.toString() !== userId);
-        }
-        await question.save();
+        const story = await Story.findById(storyId);
+        if (!story) return res.status(404).json({ message: "Story not found" });
 
-        // Create Notification (only if liked)
-        if (question.upvotes.includes(userId) && question.user.toString() !== userId) {
-            const sender = await User.findById(userId);
-            const notification = new Notification({
-                recipient: question.user,
-                sender: userId,
-                type: "upvote",
-                questionId: question._id,
-                message: `${sender.name} upvoted your question: "${question.content.substring(0, 30)}..."`
-            });
-            await notification.save();
+        if (story.author.toString() !== req.user.id) {
+            return res.status(403).json({ message: "Not authorized to add chapters to this story" });
         }
 
-        res.json(question);
-    } catch (error) {
-        res.status(500).json({ message: "Like action failed" });
-    }
-});
+        const chapterCount = await StoryChapter.countDocuments({ story: storyId });
 
-app.post("/api/questions/:id/dislike", auth, async (req, res) => {
-    try {
-        const question = await Question.findById(req.params.id);
-        if (!question) return res.status(404).json({ message: "Question not found" });
-        const userId = req.user.id;
-
-        if (question.downvotes.includes(userId)) {
-            question.downvotes = question.downvotes.filter(id => id.toString() !== userId);
-        } else {
-            question.downvotes.push(userId);
-            question.upvotes = question.upvotes.filter(id => id.toString() !== userId);
-        }
-        await question.save();
-        res.json(question);
-    } catch (error) {
-        res.status(500).json({ message: "Dislike action failed" });
-    }
-});
-
-// --- Answer API ---
-
-app.post("/api/questions/:id/answers", auth, upload.single("media"), async (req, res) => {
-    try {
-        const { content } = req.body;
-        const questionId = req.params.id;
-        let mediaUrl = "";
-        let mediaType = "text";
-
-        if (req.file) {
-            mediaUrl = req.file.path.startsWith("http") ? req.file.path : `/uploads/${req.file.filename}`;
-            const ext = path.extname(req.file.originalname).toLowerCase();
-            if ([".jpg", ".jpeg", ".png", ".gif", ".webp"].includes(ext)) {
-                mediaType = "image";
-            } else if ([".mp4", ".mov", ".avi", ".mkv"].includes(ext)) {
-                mediaType = "video";
-            }
-        }
-
-        const newAnswer = new Answer({
-            user: req.user.id,
-            question: questionId,
+        const newChapter = new StoryChapter({
+            story: storyId,
+            chapterNumber: chapterCount + 1,
+            title,
             content,
-            mediaUrl,
-            mediaType
+            isPublished: true
         });
 
-        await newAnswer.save();
+        await newChapter.save();
+        
+        story.chapters.push(newChapter._id);
+        await story.save();
 
-        // Create Notification for Question Owner
-        const question = await Question.findById(questionId);
-        if (question && question.user.toString() !== req.user.id) {
-            const sender = await User.findById(req.user.id);
-            const notification = new Notification({
-                recipient: question.user,
-                sender: req.user.id,
-                type: "answer",
-                questionId: question._id,
-                answerId: newAnswer._id,
-                message: `${sender.name} answered your question: "${question.content.substring(0, 40)}..."`
-            });
-            await notification.save();
-        }
-
-        res.status(201).json(newAnswer);
+        res.status(201).json(newChapter);
     } catch (error) {
-        console.error("Answer error:", error);
-        res.status(500).json({ message: "Failed to post answer" });
+        console.error("Chapter creation error:", error);
+        res.status(500).json({ message: "Failed to create chapter" });
     }
 });
 
-// Questions & Answers API
-app.get("/api/questions/:id/answers", auth, async (req, res) => {
+app.get("/api/stories/:id/chapters", auth, async (req, res) => {
     try {
-        const answers = await Answer.find({ question: req.params.id })
-            .populate("user", "name profilePic")
-            .sort({ createdAt: 1 });
-        res.json(answers);
+        const chapters = await StoryChapter.find({ story: req.params.id }).sort({ chapterNumber: 1 });
+        res.json(chapters);
     } catch (error) {
-        res.status(500).json({ message: "Error fetching answers" });
+        res.status(500).json({ message: "Error fetching chapters" });
+    }
+});
+
+app.post("/api/stories/generate", auth, async (req, res) => {
+    try {
+        const { prompt, genre } = req.body;
+
+        const systemPrompt = `You are a professional story writer. Write the first chapter of a ${genre} story. 
+        Format: Title ||| Chapter Content. 
+        Only return the title, the separator '|||', and the story text.`;
+
+        console.log(`Generating story with Hugging Face (${HF_MODEL})...`);
+        const response = await hf.chatCompletion({
+            model: HF_MODEL,
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: prompt }
+            ],
+            max_tokens: 1500,
+            temperature: 0.8,
+            top_p: 0.95
+        });
+        
+        const responseText = response.choices[0].message.content;
+        console.log("Story generated.");
+
+        const parts = responseText.split('|||');
+        const title = parts[0] ? parts[0].trim() : "Generated Story";
+        const content = parts[1] ? parts[1].trim() : responseText;
+
+        const newStory = new Story({
+            author: req.user.id,
+            title: title.replace(/"/g, ''), // clean title
+            description: `An AI generated ${genre} story.`,
+            genre: genre || "Other",
+            status: "published"
+        });
+        await newStory.save();
+
+        const newChapter = new StoryChapter({
+            story: newStory._id,
+            chapterNumber: 1,
+            title: "Chapter 1",
+            content: content,
+            isPublished: true
+        });
+        await newChapter.save();
+
+        newStory.chapters.push(newChapter._id);
+        await newStory.save();
+
+        res.json({ story: newStory, chapter: newChapter });
+    } catch (error) {
+        console.error("Story Generation Error:", error);
+        if (error.httpResponse) {
+            try {
+                const errorData = await error.httpResponse.json();
+                console.error("HF Error Details:", JSON.stringify(errorData, null, 2));
+            } catch (e) {}
+        }
+        res.status(500).json({ message: "Failed to generate story" });
     }
 });
 

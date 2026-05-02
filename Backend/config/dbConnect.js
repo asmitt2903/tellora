@@ -6,12 +6,19 @@ const dbConnect = async () => {
     try {
         const uri = process.env.DATABASEURL;
         if (!uri || uri === "undefined") {
-            throw new Error("DATABASEURL is not defined in the environment variables. Please check your .env file.");
+            throw new Error("DATABASEURL is not defined in the environment variables.");
         }
-        await mongoose.connect(uri)
-        console.log("Database Connected Successfully")
+        
+        console.log("Attempting to connect to MongoDB...");
+        await mongoose.connect(uri, {
+            serverSelectionTimeoutMS: 15000, // Wait 15s for server selection
+            socketTimeoutMS: 45000,         // Close sockets after 45s of inactivity
+        });
+        
+        console.log("✅ Database Connected Successfully");
     } catch (err) {
-        console.error("Database connection failed:", err.message)
+        console.error("❌ Database connection failed:", err.message);
+        console.error("Please ensure your IP is whitelisted in MongoDB Atlas and your connection string is correct.");
     }
 }
 

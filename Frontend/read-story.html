@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tellora | Read Story</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="home.css">
+    <style>
+        .story-container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px var(--shadow-color);
+        }
+        .story-title {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: var(--text-color);
+        }
+        .story-meta {
+            color: var(--text-light);
+            font-size: 14px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .story-author {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        .story-author img {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+        .chapter-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            margin-top: 40px;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        .chapter-content {
+            font-size: 18px;
+            line-height: 1.8;
+            color: var(--text-color);
+            white-space: pre-wrap;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 18px;
+            color: var(--text-light);
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="nav-container">
+            <h1 class="logo" onclick="window.location.href='home.html'">Tellora</h1>
+            
+            <nav class="nav-links">
+                <a href="home.html" class="active"><i class="fas fa-compass"></i> Explore</a>
+                <a href="create-story.html"><i class="fas fa-pen-fancy"></i> Create Story</a>
+            </nav>
+
+            <div class="nav-actions">
+                <div class="profile-section">
+                    <div class="avatar-container" id="profileTrigger" onclick="window.location.href='profile.html'">
+                        <img src="/uploads/default-avatar.png" id="navAvatar" style="width:36px;height:36px;border-radius:50%">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-layout" style="display:block;">
+        <div class="story-container" id="storyContainer">
+            <div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading story...</div>
+        </div>
+    </main>
+
+    <script src="read-story.js"></script>
+</body>
+</html>

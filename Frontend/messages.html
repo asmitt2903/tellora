@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages | MindForum</title>
+    <!-- Reusing main CSS for base styles -->
+    <link rel="stylesheet" href="home.css">
+    <!-- Messages specific css -->
+    <link rel="stylesheet" href="messages.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="navbar">
+        <div class="nav-container chat-nav-container">
+            <!-- Left Branding -->
+            <h1 class="logo" onclick="window.location.href='home.html'" style="color: #b92b27;">MindForum</h1>
+            
+            <!-- Mid Nav Links -->
+            <nav class="nav-links">
+                <a href="home.html">Feed</a>
+                <a href="messages.html" class="active">Messages</a>
+                <a href="#">Explore</a>
+                <a href="profile.html?id=me" id="navProfileLink">Profile</a>
+            </nav>
+
+            <!-- Right Options -->
+            <div class="nav-actions">
+                <div class="search-bar chat-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search conversations...">
+                </div>
+                <i class="fas fa-ellipsis-v options-icon"></i>
+                <div class="profile-section">
+                    <div class="avatar-container mini" id="headerAvatarContainer">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="chat-layout">
+        <!-- Sidebar - Discussions -->
+        <aside class="chat-sidebar">
+            <div class="sidebar-header">
+                <h2>Discussions</h2>
+            </div>
+            <div class="chat-list" id="chatListContainer">
+                <div class="loading-state">
+                    Loading conversations...
+                </div>
+                <!-- Chat Items -->
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <section class="active-chat-area" id="activeChatArea">
+            <div class="no-chat-selected" id="noChatState">
+                <i class="far fa-comments" style="font-size: 48px; color: var(--text-muted); margin-bottom: 16px;"></i>
+                <h3>Select a discussion</h3>
+                <p>Choose a conversation from the sidebar to start chatting.</p>
+            </div>
+            
+            <div id="chatContent" class="chat-content hidden">
+                <!-- Chat Header -->
+                <div class="chat-header">
+                    <div class="chat-user-info" id="chatHeaderInfo" onclick="viewChatProfile()">
+                        <!-- Dynamic Contact Info -->
+                    </div>
+                    <div class="chat-header-actions">
+                        <i class="fas fa-video"></i>
+                        <i class="fas fa-phone-alt"></i>
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                </div>
+
+                <!-- Chat History Feed -->
+                <div class="chat-history" id="chatHistoryFeed">
+                    <!-- Dynamic Messages -->
+                </div>
+
+                <!-- Chat Input Area -->
+                <div class="chat-input-wrapper">
+                    <button class="icon-btn attachment-btn"><i class="fas fa-plus"></i></button>
+                    <div class="chat-input-box">
+                        <input type="text" id="messageInput" placeholder="Share your thoughts...">
+                        <button class="icon-btn emoji-btn"><i class="far fa-smile"></i></button>
+                    </div>
+                    <button class="icon-btn send-btn" id="sendMessageBtn"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Socket.io for Realtime capability -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="home.js"></script>
+    <script src="messages.js"></script>
+</body>
+</html>

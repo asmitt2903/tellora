@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account | MindForum</title>
+    <link rel="stylesheet" href="signup.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1 class="logo">MindForum</h1>
+        <p class="tagline">Step into the Intellectual Salon.</p>
+    </div>
+
+    <div class="signup-box">
+        <h2>Join the community</h2>
+        
+        <form id="signupForm">
+            <div class="form-group">
+                <div class="label-container">
+                    <label for="name">Full Name</label>
+                </div>
+                <input type="text" id="name" placeholder="John Doe" required>
+            </div>
+
+            <div class="form-group">
+                <div class="label-container">
+                    <label for="email">Email Address</label>
+                </div>
+                <input type="email" id="email" placeholder="name@example.com" required>
+            </div>
+
+            <div class="form-group">
+                <div class="label-container">
+                    <label for="password">Password</label>
+                </div>
+                <input type="password" id="password" placeholder="Create a strong password" required>
+            </div>
+
+            <div class="form-group">
+                <div class="label-container">
+                    <label for="confirmPassword">Confirm Password</label>
+                </div>
+                <input type="password" id="confirmPassword" placeholder="Repeat your password" required>
+            </div>
+
+            <button type="submit">Create Account</button>
+        </form>
+
+        <div class="footer">
+            Already have an account? <a href="/login">Login here</a>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-section">
+    <div class="topics">
+        <div class="topic-item">
+            <span>🧠</span> PSYCHOLOGY
+        </div>
+        <div class="topic-item">
+            <span>📖</span> PHILOSOPHY
+        </div>
+        <div class="topic-item">
+            <span>🔬</span> SCIENCE
+        </div>
+    </div>
+    <div class="legal-links">
+        PRIVACY <span>•</span> TERMS <span>•</span> COMMUNITY GUIDELINES
+    </div>
+</div>
+
+<script src="signup.js"></script>
+
+</body>
+</html>

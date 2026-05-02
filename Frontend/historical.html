@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historical Fiction Stories | Tellora</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="home.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="nav-container">
+            <h1 class="logo" onclick="window.location.href='home.html'"><i class="fas fa-book-open"></i> Tellora</h1>
+            <div class="search-bar"><i class="fas fa-search"></i><input type="text" placeholder="Search stories..."></div>
+            <nav class="nav-links">
+                <a href="home.html"><i class="fas fa-compass"></i> Discover</a>
+                <a href="#"><i class="fas fa-pen-fancy"></i> My Stories</a>
+                <a href="messages.html"><i class="fas fa-envelope"></i> Messages</a>
+            </nav>
+            <div class="nav-actions">
+                <button class="btn-publish" onclick="openPublishModal()"><i class="fas fa-plus"></i> Publish</button>
+                <div class="profile-section"><div class="avatar-container" id="profileTrigger"></div></div>
+            </div>
+        </div>
+    </header>
+
+    <aside class="sidebar">
+        <h3><i class="fas fa-tags"></i> Genres</h3>
+        <div class="genre-list">
+            <a href="adventure.html" class="genre-item"><i class="fas fa-mountain"></i> Adventure</a>
+            <a href="mystery.html" class="genre-item"><i class="fas fa-mask"></i> Mystery</a>
+            <a href="romance.html" class="genre-item"><i class="fas fa-heart"></i> Romance</a>
+            <a href="fantasy.html" class="genre-item"><i class="fas fa-wand-magic-sparkles"></i> Fantasy</a>
+            <a href="scifi.html" class="genre-item"><i class="fas fa-rocket"></i> Sci-Fi</a>
+            <a href="horror.html" class="genre-item"><i class="fas fa-ghost"></i> Horror</a>
+            <a href="thriller.html" class="genre-item"><i class="fas fa-fire"></i> Thriller</a>
+            <a href="historical.html" class="genre-item active"><i class="fas fa-landmark"></i> Historical</a>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <section class="genre-section">
+            <div class="genre-header">
+                <i class="fas fa-landmark genre-icon"></i>
+                <div><h1>Historical Fiction Stories</h1><p>Journey through time with captivating historical narratives</p></div>
+            </div>
+            <div class="genre-controls">
+                <select id="sortFilter" class="sort-filter">
+                    <option value="recent">Most Recent</option>
+                    <option value="trending">Trending</option>
+                    <option value="rating">Highest Rated</option>
+                </select>
+            </div>
+            <div class="stories-grid" id="historicalStories"></div>
+        </section>
+    </main>
+
+    <script>let currentGenre = "Historical Fiction";</script>
+    <script src="home.js"></script>
+</body>
+</html>

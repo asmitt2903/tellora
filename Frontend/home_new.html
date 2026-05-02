@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tellora | Story Sharing Platform</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="home.css">
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <header class="navbar">
+        <div class="nav-container">
+            <h1 class="logo" onclick="window.location.reload()"><i class="fas fa-book-open"></i> Tellora</h1>
+            
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search stories, authors...">
+            </div>
+
+            <nav class="nav-links">
+                <a href="home.html" class="active"><i class="fas fa-compass"></i> Discover</a>
+                <a href="#"><i class="fas fa-pen-fancy"></i> My Stories</a>
+                <a href="#"><i class="fas fa-bookmark"></i> Bookmarks</a>
+                <a href="messages.html"><i class="fas fa-envelope"></i> Messages</a>
+                <a href="ai-assistant.html"><i class="fas fa-magic"></i> Writing Assistant</a>
+            </nav>
+
+            <div class="nav-actions">
+                <div class="notification-wrapper">
+                    <i class="fas fa-bell notif-icon" onclick="window.location.href='notifications.html'"></i>
+                    <span class="notification-dot hidden" id="notifDot"></span>
+                </div>
+                <button class="btn-publish" onclick="openPublishModal()"><i class="fas fa-plus"></i> Publish Story</button>
+                <div class="profile-section">
+                    <div class="avatar-container" id="profileTrigger">
+                        <!-- Will be populated by JS -->
+                    </div>
+
+                    <!-- Profile Dropdown -->
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <div class="dropdown-header">
+                            <h4 id="dropdownUserName">Loading...</h4>
+                            <p id="dropdownUserEmail">user@example.com</p>
+                        </div>
+                        <hr>
+                        <a href="#" id="viewProfileLink" class="dropdown-item">
+                            <i class="fas fa-user-circle"></i> View Profile
+                        </a>
+                        <a href="#" class="dropdown-item">
+                            <i class="fas fa-cog"></i> Settings
+                        </a>
+                        <a href="#" class="dropdown-item">
+                            <i class="fas fa-bookmark"></i> My Library
+                        </a>
+                        <hr>
+                        <div class="theme-toggle">
+                            <label for="themeToggle">
+                                <i class="fas fa-moon"></i> Dark Mode
+                            </label>
+                            <input type="checkbox" id="themeToggle">
+                        </div>
+                        <hr>
+                        <button class="logout-btn" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <button class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Genre Sidebar -->
+    <aside class="sidebar">
+        <h3><i class="fas fa-tags"></i> Genres</h3>
+        <div class="genre-list">
+            <a href="adventure.html" class="genre-item"><i class="fas fa-mountain"></i> Adventure</a>
+            <a href="mystery.html" class="genre-item"><i class="fas fa-mask"></i> Mystery</a>
+            <a href="romance.html" class="genre-item"><i class="fas fa-heart"></i> Romance</a>
+            <a href="fantasy.html" class="genre-item"><i class="fas fa-wand-magic-sparkles"></i> Fantasy</a>
+            <a href="scifi.html" class="genre-item"><i class="fas fa-rocket"></i> Sci-Fi</a>
+            <a href="horror.html" class="genre-item"><i class="fas fa-ghost"></i> Horror</a>
+            <a href="thriller.html" class="genre-item"><i class="fas fa-fire"></i> Thriller</a>
+            <a href="historical.html" class="genre-item"><i class="fas fa-landmark"></i> Historical</a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Featured Section -->
+        <section class="featured-section">
+            <h2>Featured Stories</h2>
+            <div class="featured-carousel" id="featuredCarousel">
+                <!-- Featured stories will be loaded here -->
+            </div>
+        </section>
+
+        <!-- Trending Section -->
+        <section class="trending-section">
+            <h2><i class="fas fa-fire"></i> Trending Now</h2>
+            <div class="trending-grid" id="trendingGrid">
+                <!-- Trending stories will be loaded here -->
+            </div>
+        </section>
+
+        <!-- Story Feed -->
+        <section class="feed-section">
+            <div class="feed-controls">
+                <h2>Stories for You</h2>
+                <select id="sortFilter" class="sort-filter">
+                    <option value="recent">Most Recent</option>
+                    <option value="trending">Trending</option>
+                    <option value="rating">Highest Rated</option>
+                    <option value="views">Most Viewed</option>
+                </select>
+            </div>
+            <div class="stories-feed" id="storiesFeed">
+                <!-- Stories will be loaded here -->
+            </div>
+        </section>
+
+        <!-- Mini Profile Widget -->
+        <div class="mini-profile-widget">
+            <h3>Your Profile</h3>
+            <div id="miniProfileContainer">
+                <!-- Mini profile will be rendered here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Publish Story Modal -->
+    <div class="modal hidden" id="publishModal">
+        <div class="modal-overlay" onclick="closePublishModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Publish New Story</h2>
+                <i class="fas fa-times" onclick="closePublishModal()"></i>
+            </div>
+            <form class="publish-form" onsubmit="handlePublishStory(event)">
+                <input type="text" id="storyTitle" placeholder="Story Title" required>
+                <select id="storyGenre" required>
+                    <option value="">Select Genre</option>
+                    <option value="Adventure">Adventure</option>
+                    <option value="Mystery">Mystery</option>
+                    <option value="Romance">Romance</option>
+                    <option value="Fantasy">Fantasy</option>
+                    <option value="Science Fiction">Science Fiction</option>
+                    <option value="Horror">Horror</option>
+                    <option value="Thriller">Thriller</option>
+                    <option value="Historical Fiction">Historical Fiction</option>
+                    <option value="Literary Fiction">Literary Fiction</option>
+                    <option value="Other">Other</option>
+                </select>
+                <textarea id="storyDescription" placeholder="Story Description"></textarea>
+                <input type="text" id="storyTags" placeholder="Add tags (comma-separated)">
+                <textarea id="storyContent" placeholder="Start your story..." required></textarea>
+                <button type="submit" class="btn-primary">Save as Draft</button>
+                <button type="button" class="btn-secondary" onclick="publishStoryDirect()">Publish Now</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="home.js"></script>
+</body>
+</html>

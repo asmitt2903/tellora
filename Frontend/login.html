@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | MindForum</title>
+    <link rel="stylesheet" href="login.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1 class="logo">MindForum</h1>
+        <p class="tagline">Step into the Intellectual Salon.</p>
+    </div>
+
+    <div class="login-box">
+        <h2>Welcome back</h2>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <div class="label-container">
+                    <label for="email">Email Address</label>
+                </div>
+                <input type="email" id="email" placeholder="name@example.com" required>
+            </div>
+
+            <div class="form-group">
+                <div class="label-container">
+                    <label for="password">Password</label>
+                    <a href="#" class="forgot-link">Forgot?</a>
+                </div>
+                <input type="password" id="password" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit">Login to Forum</button>
+        </form>
+
+        <div class="footer">
+            New to the community? <a href="/signup">Create an account</a>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-section">
+    <div class="topics">
+        <div class="topic-item">
+            <span>🧠</span> PSYCHOLOGY
+        </div>
+        <div class="topic-item">
+            <span>📖</span> PHILOSOPHY
+        </div>
+        <div class="topic-item">
+            <span>🔬</span> SCIENCE
+        </div>
+    </div>
+    <div class="legal-links">
+        PRIVACY <span>•</span> TERMS <span>•</span> COMMUNITY GUIDELINES
+    </div>
+</div>
+
+<script src="login.js"></script>
+
+</body>
+</html>

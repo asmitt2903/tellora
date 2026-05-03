@@ -538,6 +538,27 @@ body {
     background: #e8e8e8;
 }
 
+[data-theme="dark"] .btn-upvote-group {
+    background: #333;
+}
+
+[data-theme="dark"] .btn-vote:first-child {
+    border-right-color: #444;
+}
+
+[data-theme="dark"] .btn-vote:hover {
+    background: #444;
+}
+
+.btn-vote i {
+    font-size: 14px;
+    transition: transform 0.2s ease;
+}
+
+.btn-vote:active i {
+    transform: scale(1.2);
+}
+
 /* Answers Section */
 .answers-section {
     border-top: 1px solid var(--border-color);

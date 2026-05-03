@@ -4,8 +4,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         const res = await fetch("/api/user/me");
         if (res.ok) {
             const user = await res.json();
-            if (user.profilePic) {
-                document.getElementById("navAvatar").src = user.profilePic;
+            const trigger = document.getElementById("profileTrigger");
+            if (trigger) {
+                if (user.profilePic) {
+                    trigger.innerHTML = `<img src="${user.profilePic}" style="width:36px;height:36px;border-radius:50%">`;
+                } else {
+                    trigger.innerHTML = `<div style="width:36px;height:36px;border-radius:50%;background:var(--primary-color);color:white;display:flex;align-items:center;justify-content:center;">${user.name.charAt(0)}</div>`;
+                }
             }
         }
     } catch (e) {}

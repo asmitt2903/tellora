@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messages | MindForum</title>
+    <title>Messages | Tellora</title>
     <!-- Reusing main CSS for base styles -->
     <link rel="stylesheet" href="home.css">
     <!-- Messages specific css -->
@@ -13,27 +13,23 @@
 </head>
 <body>
     <header class="navbar">
-        <div class="nav-container chat-nav-container">
-            <!-- Left Branding -->
-            <h1 class="logo" onclick="window.location.href='home.html'" style="color: #b92b27;">MindForum</h1>
+        <div class="nav-container">
+            <h1 class="logo" onclick="window.location.href='home.html'">Tellora</h1>
             
-            <!-- Mid Nav Links -->
             <nav class="nav-links">
-                <a href="home.html">Feed</a>
-                <a href="messages.html" class="active">Messages</a>
-                <a href="#">Explore</a>
-                <a href="profile.html?id=me" id="navProfileLink">Profile</a>
+                <a href="home.html"><i class="fas fa-compass"></i> Explore</a>
+                <a href="create-story.html"><i class="fas fa-robot"></i> Create Story</a>
+                <a href="messages.html" class="active"><i class="fas fa-comment"></i> Messages</a>
             </nav>
 
-            <!-- Right Options -->
             <div class="nav-actions">
-                <div class="search-bar chat-search">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Search conversations...">
+                <div class="notification-wrapper">
+                    <i class="fas fa-bell notif-icon" onclick="window.location.href='notifications.html'"></i>
+                    <span class="notification-dot hidden" id="notifDot"></span>
                 </div>
-                <i class="fas fa-ellipsis-v options-icon"></i>
+                <button class="btn-ask" onclick="window.location.href='write-story.html'"><i class="fas fa-pen-nib"></i> Write Story</button>
                 <div class="profile-section">
-                    <div class="avatar-container mini" id="headerAvatarContainer">
+                    <div class="avatar-container mini" id="profileTrigger">
                         <!-- Loaded dynamically -->
                     </div>
                 </div>

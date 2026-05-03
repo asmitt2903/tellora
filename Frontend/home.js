@@ -221,7 +221,18 @@ async function loadStories() {
     const feed = document.getElementById("feedContent");
     try {
         const urlParams = new URLSearchParams(window.location.search);
-        const genre = urlParams.get('genre');
+        let genre = urlParams.get('genre');
+        
+        // Auto-detect genre from pathname if not in query param
+        const path = window.location.pathname;
+        if (!genre) {
+            if (path.includes("philosophy")) genre = "Philosophy";
+            else if (path.includes("psychology")) genre = "Psychology";
+            else if (path.includes("technology")) genre = "Technology";
+            else if (path.includes("science")) genre = "Science";
+            else if (path.includes("business")) genre = "Business";
+        }
+
         let url = "/api/stories";
         if (genre) {
             url += `?genre=${encodeURIComponent(genre)}`;
@@ -344,6 +355,8 @@ function createStoryCard(s) {
         </div>
     ` : "";
 
+    const hasLiked = currentUser && s.likes?.includes(currentUser._id);
+    const hasDisliked = currentUser && s.dislikes?.includes(currentUser._id);
     const isAuthor = currentUser && s.author?._id === currentUser._id;
     const deleteBtnHtml = isAuthor ? `
         <button class="delete-post-btn" onclick="deleteStory('${s._id}')" title="Delete Story">
@@ -369,7 +382,15 @@ function createStoryCard(s) {
         </div>
         <div class="card-stats">
             <div class="stat-left">
-                <div class="stat-badge">
+                <div class="btn-upvote-group">
+                    <button class="btn-vote" onclick="likeStory('${s._id}', this)" style="color: ${hasLiked ? 'var(--primary-color)' : 'inherit'}">
+                        <i class="${hasLiked ? 'fas' : 'far'} fa-thumbs-up"></i> <span class="like-count">${s.likes?.length || 0}</span>
+                    </button>
+                    <button class="btn-vote" onclick="dislikeStory('${s._id}', this)" style="color: ${hasDisliked ? 'var(--primary-color)' : 'inherit'}">
+                        <i class="${hasDisliked ? 'fas' : 'far'} fa-thumbs-down"></i> <span class="dislike-count">${s.dislikes?.length || 0}</span>
+                    </button>
+                </div>
+                <div class="stat-badge" style="margin-left: 10px;">
                      <i class="far fa-eye"></i> ${s.views || 0}
                 </div>
             </div>
@@ -381,6 +402,70 @@ function createStoryCard(s) {
         </div>
     `;
     return card;
+}
+
+async function likeStory(storyId, btn) {
+    if (!currentUser) return alert("Please login to like stories.");
+    try {
+        const response = await fetch(`/api/stories/${storyId}/like`, { method: "POST" });
+        if (response.ok) {
+            const data = await response.json();
+            const card = btn.closest(".question-card");
+            
+            // Update Counts
+            card.querySelector(".like-count").innerText = data.likes;
+            card.querySelector(".dislike-count").innerText = data.dislikes;
+            
+            // Update Buttons
+            const likeBtn = card.querySelector("button[onclick*='likeStory']");
+            const dislikeBtn = card.querySelector("button[onclick*='dislikeStory']");
+            
+            likeBtn.style.color = data.isLiked ? 'var(--primary-color)' : 'inherit';
+            likeBtn.querySelector("i").className = data.isLiked ? 'fas fa-thumbs-up' : 'far fa-thumbs-up';
+            
+            dislikeBtn.style.color = data.isDisliked ? 'var(--primary-color)' : 'inherit';
+            dislikeBtn.querySelector("i").className = data.isDisliked ? 'fas fa-thumbs-down' : 'far fa-thumbs-down';
+        } else {
+            const errorText = await response.text();
+            console.error("Like error response:", errorText);
+            alert("Server error. If this persists, please restart the server.");
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Network error or server unavailable.");
+    }
+}
+
+async function dislikeStory(storyId, btn) {
+    if (!currentUser) return alert("Please login to dislike stories.");
+    try {
+        const response = await fetch(`/api/stories/${storyId}/dislike`, { method: "POST" });
+        if (response.ok) {
+            const data = await response.json();
+            const card = btn.closest(".question-card");
+            
+            // Update Counts
+            card.querySelector(".like-count").innerText = data.likes;
+            card.querySelector(".dislike-count").innerText = data.dislikes;
+            
+            // Update Buttons
+            const likeBtn = card.querySelector("button[onclick*='likeStory']");
+            const dislikeBtn = card.querySelector("button[onclick*='dislikeStory']");
+            
+            likeBtn.style.color = data.isLiked ? 'var(--primary-color)' : 'inherit';
+            likeBtn.querySelector("i").className = data.isLiked ? 'fas fa-thumbs-up' : 'far fa-thumbs-up';
+            
+            dislikeBtn.style.color = data.isDisliked ? 'var(--primary-color)' : 'inherit';
+            dislikeBtn.querySelector("i").className = data.isDisliked ? 'fas fa-thumbs-down' : 'far fa-thumbs-down';
+        } else {
+            const errorText = await response.text();
+            console.error("Dislike error response:", errorText);
+            alert("Server error. If this persists, please restart the server.");
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Network error or server unavailable.");
+    }
 }
 
 async function deleteStory(storyId) {

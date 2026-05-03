@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tellora | Create Story (AI)</title>
+    <title>Tellora | Write Story</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="home.css">
@@ -64,17 +64,6 @@
             opacity: 0.6;
             cursor: not-allowed;
         }
-        .ai-result-preview {
-            margin-top: 30px;
-            padding: 20px;
-            background: #f8fafc;
-            border-radius: 12px;
-            border: 1px dashed var(--primary-color);
-            display: none;
-        }
-        [data-theme="dark"] .ai-result-preview {
-            background: #252525;
-        }
     </style>
 </head>
 <body>
@@ -84,8 +73,8 @@
             
             <nav class="nav-links">
                 <a href="home.html"><i class="fas fa-compass"></i> Explore</a>
-                <a href="create-story.html" class="active"><i class="fas fa-robot"></i> Create Story</a>
-                <a href="write-story.html"><i class="fas fa-pen-nib"></i> Write Story</a>
+                <a href="create-story.html"><i class="fas fa-robot"></i> Create Story</a>
+                <a href="write-story.html" class="active"><i class="fas fa-pen-nib"></i> Write Story</a>
             </nav>
 
             <div class="nav-actions">
@@ -101,18 +90,18 @@
     <main class="main-layout" style="display:block;">
         <div class="create-container">
             <div class="create-header">
-                <h2><i class="fas fa-magic"></i> AI Story Generator</h2>
-                <p>Let AI help you bring your ideas to life.</p>
+                <h2><i class="fas fa-pen-nib"></i> Write Your Story</h2>
+                <p>Share your imagination with the world.</p>
             </div>
             
-            <form class="create-form" id="aiGeneratorForm">
+            <form class="create-form" id="storyForm">
                 <div class="form-group">
-                    <label>AI Prompt</label>
-                    <textarea id="aiPromptInput" placeholder="Describe the story you want AI to write (e.g., 'A detective solving a crime in a cyberpunk city')..." required></textarea>
+                    <label>Story Title</label>
+                    <input type="text" id="titleInput" placeholder="Enter a catchy title..." required>
                 </div>
                 <div class="form-group">
-                    <label>Preferred Genre</label>
-                    <select id="aiGenreSelect">
+                    <label>Genre</label>
+                    <select id="genreSelect">
                         <option value="Fantasy">Fantasy</option>
                         <option value="Science Fiction">Science Fiction</option>
                         <option value="Mystery">Mystery</option>
@@ -122,18 +111,25 @@
                         <option value="Other">Other</option>
                     </select>
                 </div>
-                <button type="button" class="btn-action" id="generateBtn" onclick="generateAISubmission()">
-                    <i class="fas fa-sparkles"></i> Generate & Publish Story
+                <div class="form-group">
+                    <label>Story Description (Brief)</label>
+                    <textarea id="descriptionInput" style="height: 80px;" placeholder="What is this story about?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Story Content</label>
+                    <textarea id="contentInput" placeholder="Once upon a time..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Cover Image (Optional)</label>
+                    <input type="file" id="coverImageInput" accept="image/*">
+                </div>
+                <button type="submit" class="btn-action" id="publishBtn">
+                    <i class="fas fa-paper-plane"></i> Publish Story
                 </button>
             </form>
-            
-            <div id="aiResultPreview" class="ai-result-preview">
-                <h3 id="resultTitle"></h3>
-                <p id="resultContent" style="margin-top: 15px; font-style: italic;"></p>
-            </div>
         </div>
     </main>
 
-    <script src="create-story.js"></script>
+    <script src="write-story.js"></script>
 </body>
 </html>

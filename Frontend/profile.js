@@ -219,32 +219,7 @@ async function loadTabContent(tab) {
             } else {
                 feed.innerHTML = "";
                 userStories.forEach(s => {
-                    // Create story card using logic similar to home.js
-                    const card = document.createElement("div");
-                    card.className = "question-card"; 
-                    card.innerHTML = `
-                        <div class="card-header">
-                            <div class="user-info">
-                                <h4 style="margin-bottom:5px;">${s.title}</h4>
-                                <span>Genre: ${s.genre} • ${new Date(s.createdAt).toLocaleDateString()}</span>
-                            </div>
-                        </div>
-                        <div class="card-content">
-                            <p>${s.description || 'A fascinating story waiting to be read.'}</p>
-                        </div>
-                        <div class="card-stats">
-                            <div class="stat-left">
-                                <div class="stat-badge">
-                                     <i class="far fa-eye"></i> Views • ${s.views || 0}
-                                </div>
-                            </div>
-                            <div class="stat-right">
-                                <div class="stat-item" onclick="window.location.href='read-story.html?id=${s._id}'" style="color: var(--primary-color); font-weight: bold;">
-                                    <i class="fas fa-book-open"></i> Read Story
-                                </div>
-                            </div>
-                        </div>
-                    `;
+                    const card = createStoryCard(s);
                     feed.appendChild(card);
                 });
             }

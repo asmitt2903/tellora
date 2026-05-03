@@ -478,7 +478,7 @@ app.get("/api/user/:id/questions", async (req, res) => {
 
 app.post("/api/stories", auth, upload.single("coverImage"), async (req, res) => {
     try {
-        const { title, description, genre, tags } = req.body;
+        const { title, description, genre, tags, content } = req.body;
         let coverImageUrl = "";
 
         if (req.file) {
@@ -496,6 +496,20 @@ app.post("/api/stories", auth, upload.single("coverImage"), async (req, res) => 
         });
 
         await newStory.save();
+
+        if (content) {
+            const newChapter = new StoryChapter({
+                story: newStory._id,
+                chapterNumber: 1,
+                title: "Chapter 1",
+                content: content,
+                isPublished: true
+            });
+            await newChapter.save();
+            newStory.chapters.push(newChapter._id);
+            await newStory.save();
+        }
+
         res.status(201).json(newStory);
     } catch (error) {
         console.error("Story creation error:", error);
@@ -533,6 +547,62 @@ app.get("/api/stories/:id", auth, async (req, res) => {
         res.json(story);
     } catch (error) {
         res.status(500).json({ message: "Error fetching story" });
+    }
+});
+
+app.post("/api/stories/:id/like", auth, async (req, res) => {
+    try {
+        const story = await Story.findById(req.params.id);
+        if (!story) return res.status(404).json({ message: "Story not found" });
+
+        const userId = req.user.id;
+        const isLiked = story.likes.some(id => id.toString() === userId);
+
+        if (isLiked) {
+            story.likes.pull(userId);
+        } else {
+            story.likes.addToSet(userId);
+            story.dislikes.pull(userId);
+        }
+
+        await story.save();
+        res.json({ 
+            likes: story.likes.length, 
+            dislikes: story.dislikes.length, 
+            isLiked: !isLiked,
+            isDisliked: false 
+        });
+    } catch (error) {
+        console.error("Like error:", error);
+        res.status(500).json({ message: "Error liking story" });
+    }
+});
+
+app.post("/api/stories/:id/dislike", auth, async (req, res) => {
+    try {
+        const story = await Story.findById(req.params.id);
+        if (!story) return res.status(404).json({ message: "Story not found" });
+
+        const userId = req.user.id;
+        const isDisliked = story.dislikes.some(id => id.toString() === userId);
+
+        if (isDisliked) {
+            story.dislikes.pull(userId);
+        } else {
+            story.dislikes.addToSet(userId);
+            story.likes.pull(userId);
+        }
+
+        await story.save();
+        res.json({ 
+            likes: story.likes.length, 
+            dislikes: story.dislikes.length, 
+            isDisliked: !isDisliked,
+            isLiked: false
+        });
+    } catch (error) {
+        console.error("Dislike error:", error);
+        res.status(500).json({ message: "Error disliking story" });
     }
 });
 
@@ -604,6 +674,17 @@ app.get("/api/stories/:id/chapters", auth, async (req, res) => {
 app.post("/api/stories/generate", auth, async (req, res) => {
     try {
         const { prompt, genre } = req.body;
+
+        // Check for required story keywords as requested by user
+        const requiredWords = ["tale", "narrative", "account", "chronicle", "anecdote"];
+        const lowerPrompt = prompt.toLowerCase();
+        const foundRequired = requiredWords.some(word => lowerPrompt.includes(word));
+
+        if (!foundRequired) {
+            return res.status(400).json({ 
+                message: "This is only made to generate story and not for the other tasks or any other information knowledge. Please include one of the story keywords (Tale, Narrative, Account, Chronicle, Anecdote) in your prompt." 
+            });
+        }
 
         const systemPrompt = `You are a professional story writer. Write the first chapter of a ${genre} story. 
         Format: Title ||| Chapter Content. 

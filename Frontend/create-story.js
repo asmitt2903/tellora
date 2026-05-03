@@ -4,8 +4,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         const res = await fetch("/api/user/me");
         if (res.ok) {
             const user = await res.json();
+            const avatarContainer = document.getElementById("profileTrigger");
             if (user.profilePic) {
-                document.getElementById("navAvatar").src = user.profilePic;
+                avatarContainer.innerHTML = `<img src="${user.profilePic}" style="width:36px;height:36px;border-radius:50%">`;
+            } else {
+                avatarContainer.innerHTML = `<div style="width:36px;height:36px;border-radius:50%;background:var(--primary-color);color:white;display:flex;align-items:center;justify-content:center;">${user.name.charAt(0)}</div>`;
             }
         } else {
             window.location.href = "login.html";
@@ -15,42 +18,46 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 });
 
-async function generateStory() {
-    const prompt = document.getElementById("promptInput").value.trim();
-    const genre = document.getElementById("genreSelect").value;
-    const btn = document.getElementById("generateBtn");
+// --- AI Submission ---
+window.generateAISubmission = async function() {
+    const prompt = document.getElementById("aiPromptInput").value;
+    const genre = document.getElementById("aiGenreSelect").value;
+    
+    if (!prompt) return alert("Please describe your story first.");
 
-    if (!prompt) return alert("Please enter a prompt!");
-
-    btn.disabled = true;
-    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Generating...`;
+    const generateBtn = document.getElementById("generateBtn");
+    const preview = document.getElementById("aiResultPreview");
+    
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = '<i class="fas fa-robot fa-spin"></i> Generating with AI...';
+    preview.style.display = 'none';
 
     try {
         const response = await fetch("/api/stories/generate", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ prompt, genre })
         });
 
         if (response.ok) {
             const data = await response.json();
-            document.getElementById("resultContainer").style.display = "block";
+            // Show preview briefly before redirect
+            preview.style.display = 'block';
             document.getElementById("resultTitle").innerText = data.story.title;
-            document.getElementById("resultGenre").innerText = `Genre: ${data.story.genre}`;
-            document.getElementById("resultContent").innerText = data.chapter.content;
+            document.getElementById("resultContent").innerText = data.chapter.content.substring(0, 300) + "...";
             
-            // clear form
-            document.getElementById("promptInput").value = "";
+            setTimeout(() => {
+                window.location.href = `read-story.html?id=${data.story._id}`;
+            }, 3000);
         } else {
-            alert("Failed to generate story.");
+            const err = await response.json();
+            alert(err.message || "AI generation failed.");
         }
     } catch (error) {
         console.error(error);
         alert("An error occurred while generating.");
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<i class="fas fa-bolt"></i> Generate Story`;
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = '<i class="fas fa-sparkles"></i> Generate & Publish Story';
     }
-}
+};

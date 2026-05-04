@@ -676,7 +676,7 @@ app.post("/api/stories/generate", auth, async (req, res) => {
         const { prompt, genre } = req.body;
 
         // Check for required story keywords as requested by user
-        const requiredWords = ["tale", "narrative", "account", "chronicle", "anecdote"];
+        const requiredWords = ["tale", "narrative", "account", "chronicle", "anecdote","story"];
         const lowerPrompt = prompt.toLowerCase();
         const foundRequired = requiredWords.some(word => lowerPrompt.includes(word));
 

@@ -146,43 +146,58 @@ app.get("/messages",auth,(req,res)=>{
     res.sendFile(path.join(frontendPath,"messages.html"))
 })
 
+app.get("/profile",auth,(req,res)=>{
+    res.sendFile(path.join(frontendPath,"profile.html"))
+})
+
+app.get("/notifications",auth,(req,res)=>{
+    res.sendFile(path.join(frontendPath,"notifications.html"))
+})
+
 
 
 app.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
 
+        // Basic validation
+        if (!email || !password) {
+            return res.status(400).send("Email and password are required");
+        }
+
         // Find user by email
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email: email.toLowerCase().trim() });
         if (!user) {
-            return res.send("Invalid Email or Password");
+            return res.status(401).send("Invalid Email or Password");
         }
 
         // Validate password
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
-            return res.send("Invalid Email or Password");
+            return res.status(401).send("Invalid Email or Password");
         }
 
         // Generate JWT
         const token = jwt.sign(
             { id: user._id, email: user.email },
             process.env.JWT_SECRET,
-            { expiresIn: "1h" }
+            { expiresIn: "7d" }
         );
 
         // Send token in cookie
+        // secure:true only works over HTTPS — disable on local dev
+        const isProduction = process.env.NODE_ENV === "production";
         res.cookie("token", token, {
             httpOnly: true,
-            secure: true,
-            sameSite: "none",
-            maxAge: 3600000
+            secure: isProduction,
+            sameSite: isProduction ? "none" : "lax",
+            maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
         });
 
         res.send("Login Successful");
     } catch (error) {
-        console.error("Login error:", error);
-        res.status(500).send("Login failed");
+        console.error("Login error:", error.message, error.stack);
+        res.status(500).send("Login failed: " + error.message);
     }
 });
 
@@ -249,10 +264,10 @@ app.post("/api/ai/ask", auth, async (req, res) => {
             `Genre: ${s.genre}, Story Title: ${s.title}, Author: ${s.author.name}`
         ).join("\n");
 
-        const systemPrompt = `You are MindForum AI, an elite Editorial Intelligence designed for the MindForum knowledge-sharing platform.
-        Your purpose is to provide deep, analytical, and highly intellectual responses.
+        const systemPrompt = `You are Tellora AI, an elite Editorial Intelligence designed for the Tellora story-sharing platform.
+        Your purpose is to provide deep, analytical, and highly intellectual responses about stories and narratives.
         Structure your responses to be engaging, professional, and insightful. 
-        Context from recent forum discussions:
+        Context from recent platform stories:
         ${context}`;
 
         console.log("Generating AI response with Hugging Face (Qwen)...");
@@ -296,21 +311,7 @@ app.post("/api/ai/ask", auth, async (req, res) => {
     }
 });
 
-app.post("/api/user/upload-profile-pic", auth, upload.single("profilePic"), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ message: "No file uploaded" });
-        }
-
-        const profilePicUrl = req.file.path.startsWith("http") ? req.file.path : `/uploads/${req.file.filename}`;
-        await User.findByIdAndUpdate(req.user.id, { profilePic: profilePicUrl });
-
-        res.json({ message: "Upload successful", profilePic: profilePicUrl });
-    } catch (error) {
-        console.error("Upload error:", error);
-        res.status(500).json({ message: "Upload failed" });
-    }
-});
+// Duplicate route removed — handled at line 205
 
 app.patch("/api/user/profile", auth, async (req, res) => {
     try {
@@ -474,11 +475,26 @@ app.get("/api/user/:id/questions", async (req, res) => {
     }
 });
 
+// Search Users (for New Chat modal)
+app.get("/api/users/search", auth, async (req, res) => {
+    try {
+        const q = (req.query.q || "").trim();
+        if (q.length < 2) return res.json([]);
+        const users = await User.find({
+            name: { $regex: q, $options: "i" },
+            _id: { $ne: req.user.id }
+        }).select("name profilePic title").limit(10);
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ message: "Search failed" });
+    }
+});
+
 // --- Story & Chapter API ---
 
 app.post("/api/stories", auth, upload.single("coverImage"), async (req, res) => {
     try {
-        const { title, description, genre, tags, content } = req.body;
+        const { title, description, genre, tags } = req.body;
         let coverImageUrl = "";
 
         if (req.file) {
@@ -496,20 +512,6 @@ app.post("/api/stories", auth, upload.single("coverImage"), async (req, res) => 
         });
 
         await newStory.save();
-
-        if (content) {
-            const newChapter = new StoryChapter({
-                story: newStory._id,
-                chapterNumber: 1,
-                title: "Chapter 1",
-                content: content,
-                isPublished: true
-            });
-            await newChapter.save();
-            newStory.chapters.push(newChapter._id);
-            await newStory.save();
-        }
-
         res.status(201).json(newStory);
     } catch (error) {
         console.error("Story creation error:", error);
@@ -547,62 +549,6 @@ app.get("/api/stories/:id", auth, async (req, res) => {
         res.json(story);
     } catch (error) {
         res.status(500).json({ message: "Error fetching story" });
-    }
-});
-
-app.post("/api/stories/:id/like", auth, async (req, res) => {
-    try {
-        const story = await Story.findById(req.params.id);
-        if (!story) return res.status(404).json({ message: "Story not found" });
-
-        const userId = req.user.id;
-        const isLiked = story.likes.some(id => id.toString() === userId);
-
-        if (isLiked) {
-            story.likes.pull(userId);
-        } else {
-            story.likes.addToSet(userId);
-            story.dislikes.pull(userId);
-        }
-
-        await story.save();
-        res.json({ 
-            likes: story.likes.length, 
-            dislikes: story.dislikes.length, 
-            isLiked: !isLiked,
-            isDisliked: false 
-        });
-    } catch (error) {
-        console.error("Like error:", error);
-        res.status(500).json({ message: "Error liking story" });
-    }
-});
-
-app.post("/api/stories/:id/dislike", auth, async (req, res) => {
-    try {
-        const story = await Story.findById(req.params.id);
-        if (!story) return res.status(404).json({ message: "Story not found" });
-
-        const userId = req.user.id;
-        const isDisliked = story.dislikes.some(id => id.toString() === userId);
-
-        if (isDisliked) {
-            story.dislikes.pull(userId);
-        } else {
-            story.dislikes.addToSet(userId);
-            story.likes.pull(userId);
-        }
-
-        await story.save();
-        res.json({ 
-            likes: story.likes.length, 
-            dislikes: story.dislikes.length, 
-            isDisliked: !isDisliked,
-            isLiked: false
-        });
-    } catch (error) {
-        console.error("Dislike error:", error);
-        res.status(500).json({ message: "Error disliking story" });
     }
 });
 
@@ -675,17 +621,6 @@ app.post("/api/stories/generate", auth, async (req, res) => {
     try {
         const { prompt, genre } = req.body;
 
-        // Check for required story keywords as requested by user
-        const requiredWords = ["tale", "narrative", "account", "chronicle", "anecdote","story"];
-        const lowerPrompt = prompt.toLowerCase();
-        const foundRequired = requiredWords.some(word => lowerPrompt.includes(word));
-
-        if (!foundRequired) {
-            return res.status(400).json({ 
-                message: "This is only made to generate story and not for the other tasks or any other information knowledge. Please include one of the story keywords (Tale, Narrative, Account, Chronicle, Anecdote) in your prompt." 
-            });
-        }
-
         const systemPrompt = `You are a professional story writer. Write the first chapter of a ${genre} story. 
         Format: Title ||| Chapter Content. 
         Only return the title, the separator '|||', and the story text.`;
@@ -740,6 +675,52 @@ app.post("/api/stories/generate", auth, async (req, res) => {
             } catch (e) {}
         }
         res.status(500).json({ message: "Failed to generate story" });
+    }
+});
+
+app.post("/api/stories/:id/like", auth, async (req, res) => {
+    try {
+        const story = await Story.findById(req.params.id);
+        if (!story) return res.status(404).json({ message: "Story not found" });
+
+        const userId = req.user.id;
+        const likedIndex = story.likes.indexOf(userId);
+        const dislikedIndex = story.dislikes.indexOf(userId);
+
+        if (likedIndex > -1) {
+            story.likes.splice(likedIndex, 1); // Unlike
+        } else {
+            story.likes.push(userId); // Like
+            if (dislikedIndex > -1) story.dislikes.splice(dislikedIndex, 1); // Remove dislike if exists
+        }
+
+        await story.save();
+        res.json({ likes: story.likes.length, dislikes: story.dislikes.length });
+    } catch (error) {
+        res.status(500).json({ message: "Error toggling like" });
+    }
+});
+
+app.post("/api/stories/:id/dislike", auth, async (req, res) => {
+    try {
+        const story = await Story.findById(req.params.id);
+        if (!story) return res.status(404).json({ message: "Story not found" });
+
+        const userId = req.user.id;
+        const likedIndex = story.likes.indexOf(userId);
+        const dislikedIndex = story.dislikes.indexOf(userId);
+
+        if (dislikedIndex > -1) {
+            story.dislikes.splice(dislikedIndex, 1); // Remove dislike
+        } else {
+            story.dislikes.push(userId); // Dislike
+            if (likedIndex > -1) story.likes.splice(likedIndex, 1); // Remove like if exists
+        }
+
+        await story.save();
+        res.json({ likes: story.likes.length, dislikes: story.dislikes.length });
+    } catch (error) {
+        res.status(500).json({ message: "Error toggling dislike" });
     }
 });
 

@@ -494,7 +494,7 @@ app.get("/api/users/search", auth, async (req, res) => {
 
 app.post("/api/stories", auth, upload.single("coverImage"), async (req, res) => {
     try {
-        const { title, description, genre, tags } = req.body;
+        const { title, description, genre, tags, content } = req.body;
         let coverImageUrl = "";
 
         if (req.file) {
@@ -512,6 +512,21 @@ app.post("/api/stories", auth, upload.single("coverImage"), async (req, res) => 
         });
 
         await newStory.save();
+
+        // If the user wrote story content manually, save it as Chapter 1
+        if (content && content.trim()) {
+            const newChapter = new StoryChapter({
+                story: newStory._id,
+                chapterNumber: 1,
+                title: "Chapter 1",
+                content: content.trim(),
+                isPublished: true
+            });
+            await newChapter.save();
+            newStory.chapters.push(newChapter._id);
+            await newStory.save();
+        }
+
         res.status(201).json(newStory);
     } catch (error) {
         console.error("Story creation error:", error);
